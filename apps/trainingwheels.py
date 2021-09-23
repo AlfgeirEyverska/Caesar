@@ -68,10 +68,10 @@ if path.exists(caesar_config['failure_audio_path']):
         print('doh, no sound')
 
 # Initiate timing
-rn = datetime.now()
+start_time = datetime.now()
 
 # Create log file name based off of the current date and time
-log_file_name = f'{caesar_config["results_path"]}/{caesar_config["monkey_name"]}_{rn.date()}_{rn.hour}-{rn.minute}-{rn.second}.log'
+log_file_name = f'{caesar_config["results_path"]}/{caesar_config["monkey_name"]}_{start_time.date()}_{start_time.hour}-{start_time.minute}-{start_time.second}.log'
 
 
 # log: monkey, stimulus,
@@ -105,6 +105,9 @@ class Target(Widget):
         anim.start(self)
 
     def on_touch_down(self, touch):
+
+        rn = datetime.now()
+
         if self.collide_point(*touch.pos):
 
             # TODO: investigate laggy audio
@@ -120,11 +123,11 @@ class Target(Widget):
                 self.random_movement()
             print('touched')
             # TODO: consider adding timestamp to the hit
-            log_event(f'hit at {rn.time()}')
+            log_event(f'hit', rn)
         else:
             failure_sound.play()
             # TODO: consider adding timestamp to the miss
-            log_event(f'miss at {rn.time()}')
+            log_event(f'miss', rn)
 
 
 class MainApp(App):

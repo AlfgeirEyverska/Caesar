@@ -1,0 +1,53 @@
+<SimonBoardWidget>:
+    id: simon_board
+
+    Label:
+        text: 'Simon'
+        font_size: 100
+        size_hint: 0.49, 0.49
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        auto_bring_to_front: True
+
+    Label:
+        id: scoreboard
+        text: str(root.sequence)
+        font_size: 100
+        size_hint: 0.49, 0.49
+        pos_hint: {'center_x': 0.5, 'center_y': 0.4}
+        # on_text: root.play_sequence(root.sequence)
+
+    Button:
+        id: top_left
+        background_normal: 'media/tl-green-80.png'
+        background_down: 'media/tl-green.png'
+        border: 0, 0, 0, 0
+        size_hint: 0.49, 0.49
+        pos_hint: {'left': 0, 'top': 1}
+        on_press: root.sequence += 'g' # root.score += 1
+
+    Button:
+        id: top_right
+        background_normal: 'media/tr-red-80.png'
+        background_down: 'media/tr-red.png'
+        border: 0, 0, 0, 0
+        size_hint: 0.49, 0.49
+        pos_hint: {'right': 1, 'top': 1}
+        on_press: root.sequence += 'r' # root.play_sequence(root.sequence)
+
+    Button:
+        id: bottom_left
+        background_normal: 'media/bl-yellow-80.png'
+        background_down: 'media/bl-yellow.png'
+        border: 0, 0, 0, 0
+        size_hint: 0.49, 0.49
+        pos_hint: {'left': 0, 'bottom': 0}
+        on_press: root.sequence += 'y'
+
+    Button:
+        id: bottom_right
+        background_normal: 'media/br-blue-80.png'
+        background_down: 'media/br-blue.png'
+        border: 0, 0, 0, 0
+        size_hint: 0.49, 0.49
+        pos_hint: {'right': 1, 'bottom': 0}
+        on_press: root.sequence += 'b'
