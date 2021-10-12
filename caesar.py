@@ -1,4 +1,3 @@
-import kivy
 # kivy.require('1.0.6')
 
 from kivy.app import App
@@ -24,7 +23,6 @@ class MainApp(App):
             'monkey_name': 'Daisy',
             'icon': '/',
             'num_clicks': 1,
-            'delay': 0,
             'max_size': 100,
             'min_size': 30,
             'use_fail_audio': True,
@@ -33,6 +31,10 @@ class MainApp(App):
             'failure_audio_path': '/',
             'results_path': '/'
         })
+        '''
+        'delay': 0, <- from above
+        delay = 9 <- from main.ini
+        '''
 
     def build_settings(self, settings):
         settings.add_json_panel('Training Wheels',
@@ -59,7 +61,7 @@ class Interface(BoxLayout):
         # Start Delay handling is a bit wonky
         time.sleep(int(start_delay_time))
 
-        retval = subprocess.run(['python3', 'trainingwheels.py'])
+        retval = subprocess.run(['python3', './apps/trainingwheels.py'])
         print(retval)
         if retval.returncode != 0:
             print('App did not run successfully')

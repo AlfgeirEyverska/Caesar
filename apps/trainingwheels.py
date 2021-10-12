@@ -12,33 +12,16 @@ from datetime import datetime
 from random import random
 from os import path
 
-import dispenser
-import multiprocessing as mp
+import requests
 
 # dispenser setup
+# import dispenser
+# import multiprocessing as mp
 
-tw_dispenser_q = mp.Queue()
+# tw_dispenser_q = mp.Queue()
 
-tw_dispenser_process = mp.Process(target=dispenser.thread_dispenser, args=(tw_dispenser_q,))
-tw_dispenser_process.start()
-
-# markup
-Builder.load_string('''
-<Root>:
-    Target:
-        pos: (root.center_x - self.width/2.), (root.center_y - self.height/2.)
-        size_hint_x: None
-        size_hint_y: None
-        width: root.height
-        height: root.height 
-<Target>:
-    canvas:
-        Color:
-            rgba: 0.7, 0, 0, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-''')
+# tw_dispenser_process = mp.Process(target=dispenser.thread_dispenser, args=(tw_dispenser_q,))
+# tw_dispenser_process.start()
 
 # Load in the configuration options set from the main app
 # TODO: Figure out how to load settings upon use, not load
@@ -67,18 +50,68 @@ if path.exists(caesar_config['failure_audio_path']):
     else:
         print('doh, no sound')
 
+# max size setup
+max_size = Window.width if Window.height > Window.width else Window.height
+max_size = max_size * float(caesar_config['max_size']) / 100.0
+print(f'Maximum size: {float(caesar_config["max_size"])}% - {max_size}')
+
+# min size setup
+min_size = Window.width if Window.height > Window.width else Window.height
+min_size = min_size * float(caesar_config['min_size']) / 100.0
+
+print(f'Minimum size: {float(caesar_config["min_size"])}% - {min_size}')
+print(f'Window width - {Window.width}\nWindow height - {Window.height}')
+
+# markup
+Builder.load_string(f'''
+<Root>:
+    Target:
+        pos: (root.center_x - self.width/2.), (root.center_y - self.height/2.)
+        size_hint_x: None
+        size_hint_y: None
+        width: {max_size}
+        height: {max_size}
+<Target>:
+    canvas:
+        Color:
+            rgba: 0.7, 0, 0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+''')
+
 # Initiate timing
 start_time = datetime.now()
+
+# create new session
+data = {"name": caesar_config["monkey_name"], "date": str(start_time.date()), "app": "Training Wheels"}
+print(data)
+results = requests.post('http://127.0.0.1:3000/api/sessions/', data=data)
+print(results.content)
+
+# TODO: update with error handling
+session_id = results.json()[0]['id']
 
 # Create log file name based off of the current date and time
 log_file_name = f'{caesar_config["results_path"]}/{caesar_config["monkey_name"]}_{start_time.date()}_{start_time.hour}-{start_time.minute}-{start_time.second}.log'
 
 
 # log: monkey, stimulus,
-def log_event(event):
-    log_file = open(log_file_name, 'a')
-    log_file.write(f'{event}, {rn.date()}, {rn.time()}\n')
+def log_event(event_data):
+    try:
+        log_file = open(log_file_name, 'a')
+    except FileNotFoundError:
+        log_file = open(log_file_name, 'x')
+
+    print(event_data)
+    log_file.write(str(event_data) + '\n')
     log_file.close()
+
+
+# TODO: update to use actual api address
+def post_event(event_data):
+    response = requests.post(f'http://127.0.0.1:3000/api/events/{session_id}', data=event_data)
+    print(response.content)
 
 
 class Root(Widget):
@@ -107,27 +140,34 @@ class Target(Widget):
     def on_touch_down(self, touch):
 
         rn = datetime.now()
+        hit = 0
 
         if self.collide_point(*touch.pos):
-
             # TODO: investigate laggy audio
             success_sound.play()
 
             # dispense
-            tw_dispenser_q.put(1)
+            # tw_dispenser_q.put(1)
 
-            # TODO: use selected minimum size
-            if self.width > 600:
+            if self.width > min_size:
                 self.shrink()
             else:
                 self.random_movement()
             print('touched')
-            # TODO: consider adding timestamp to the hit
-            log_event(f'hit', rn)
+            # NOTE: I am using center x and center y, not the bottom left corner like in the calculation
+            hit = 1
         else:
             failure_sound.play()
-            # TODO: consider adding timestamp to the miss
-            log_event(f'miss', rn)
+            hit = 0
+
+        event_data = {'hit': hit,
+                      'radius': self.width / 2.0,
+                      'position': f'{self.center_x}, {self.center_y}',
+                      'time': str(rn.time()),
+                      'hitMarker': f'{touch.pos[0]}, {touch.pos[1]}',
+                      'session': session_id}
+        log_event(event_data)
+        post_event(event_data)
 
 
 class MainApp(App):
@@ -135,9 +175,9 @@ class MainApp(App):
         return Root()
 
     def __del__(self):
-        tw_dispenser_q.put('poison pill')
-        print('Poisoned')
-        tw_dispenser_process.join(timeout=1.)
+        # tw_dispenser_q.put('poison pill')
+        # print('Poisoned')
+        # tw_dispenser_process.join(timeout=1.)
         print('Closing thread')
 
 
