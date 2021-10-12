@@ -24,24 +24,6 @@ import requests
 # tw_dispenser_process = mp.Process(target=dispenser.thread_dispenser, args=(tw_dispenser_q,))
 # tw_dispenser_process.start()
 
-# markup
-Builder.load_string('''
-<Root>:
-    Target:
-        pos: (root.center_x - self.width/2.), (root.center_y - self.height/2.)
-        size_hint_x: None
-        size_hint_y: None
-        width: root.height
-        height: root.height 
-<Target>:
-    canvas:
-        Color:
-            rgba: 0.7, 0, 0, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-''')
-
 # Load in the configuration options set from the main app
 # TODO: Figure out how to load settings upon use, not load
 #   Consider moving it and its dependents into the run function
@@ -69,6 +51,36 @@ if path.exists(caesar_config['failure_audio_path']):
     else:
         print('doh, no sound')
 
+# max size setup
+max_size = Window.width if Window.height > Window.width else Window.height
+max_size = max_size * float(caesar_config['max_size']) / 100.0
+print(f'Maximum size: {float(caesar_config["max_size"])}% - {max_size}')
+
+# min size setup
+min_size = Window.width if Window.height > Window.width else Window.height
+min_size = min_size * float(caesar_config['min_size']) / 100.0
+print(f'Minimum size: {float(caesar_config["min_size"])}% - {min_size}')
+
+print(f'Window width - {Window.width}\nWindow height - {Window.height}')
+
+# markup
+Builder.load_string(f'''
+<Root>:
+    Target:
+        pos: (root.center_x - self.width/2.), (root.center_y - self.height/2.)
+        size_hint_x: None
+        size_hint_y: None
+        width: {max_size}
+        height: {max_size}
+<Target>:
+    canvas:
+        Color:
+            rgba: 0.7, 0, 0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+''')
+
 # Initiate timing
 start_time = datetime.now()
 
@@ -83,18 +95,12 @@ def log_event(event_data):
     except FileNotFoundError:
         log_file = open(log_file_name, 'x')
 
-    event = f'{event_data["hit"]}, '
-    event += f'{event_data["radius"]}, '
-    event += f'{event_data["position"]}, '
-    event += f'{event_data["time"]}, '
-    event += f'\'{event_data["hitMarker"]}\', '
-    event += f'{event_data["session"]}'
-
     print(event_data)
-    log_file.write(f'{event}\n')
+    log_file.write(str(event_data) + '\n')
     log_file.close()
 
 
+# TODO: update to use actual api address
 def post_event(event_data):
     response = requests.post('http://127.0.0.1:3000/api/sessions/5', data=event_data)
     print(response.content)
@@ -135,8 +141,7 @@ class Target(Widget):
             # dispense
             # tw_dispenser_q.put(1)
 
-            # TODO: use selected minimum size
-            if self.width > 600:
+            if self.width > min_size:
                 self.shrink()
             else:
                 self.random_movement()
