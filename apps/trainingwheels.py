@@ -12,15 +12,17 @@ from datetime import datetime
 from random import random
 from os import path
 
-import dispenser
-import multiprocessing as mp
+import requests
+
+# import dispenser
+# import multiprocessing as mp
 
 # dispenser setup
 
-tw_dispenser_q = mp.Queue()
+# tw_dispenser_q = mp.Queue()
 
-tw_dispenser_process = mp.Process(target=dispenser.thread_dispenser, args=(tw_dispenser_q,))
-tw_dispenser_process.start()
+# tw_dispenser_process = mp.Process(target=dispenser.thread_dispenser, args=(tw_dispenser_q,))
+# tw_dispenser_process.start()
 
 # markup
 Builder.load_string('''
@@ -75,10 +77,27 @@ log_file_name = f'{caesar_config["results_path"]}/{caesar_config["monkey_name"]}
 
 
 # log: monkey, stimulus,
-def log_event(event):
-    log_file = open(log_file_name, 'a')
-    log_file.write(f'{event}, {rn.date()}, {rn.time()}\n')
+def log_event(event_data):
+    try:
+        log_file = open(log_file_name, 'a')
+    except FileNotFoundError:
+        log_file = open(log_file_name, 'x')
+
+    event = f'{event_data["hit"]}, '
+    event += f'{event_data["radius"]}, '
+    event += f'{event_data["position"]}, '
+    event += f'{event_data["time"]}, '
+    event += f'\'{event_data["hitMarker"]}\', '
+    event += f'{event_data["session"]}'
+
+    print(event_data)
+    log_file.write(f'{event}\n')
     log_file.close()
+
+
+def post_event(event_data):
+    response = requests.post('http://127.0.0.1:3000/api/sessions/5', data=event_data)
+    print(response.content)
 
 
 class Root(Widget):
@@ -107,14 +126,14 @@ class Target(Widget):
     def on_touch_down(self, touch):
 
         rn = datetime.now()
+        hit = 0
 
         if self.collide_point(*touch.pos):
-
             # TODO: investigate laggy audio
             success_sound.play()
 
             # dispense
-            tw_dispenser_q.put(1)
+            # tw_dispenser_q.put(1)
 
             # TODO: use selected minimum size
             if self.width > 600:
@@ -122,12 +141,20 @@ class Target(Widget):
             else:
                 self.random_movement()
             print('touched')
-            # TODO: consider adding timestamp to the hit
-            log_event(f'hit', rn)
+            # NOTE: I am using center x and center y, not the bottom left corner like in the calculation
+            hit = 1
         else:
             failure_sound.play()
-            # TODO: consider adding timestamp to the miss
-            log_event(f'miss', rn)
+            hit = 0
+
+        event_data = {'hit': hit,
+                      'radius': self.width / 2.0,
+                      'position': f'{self.center_x}, {self.center_y}',
+                      'time': str(rn.time()),
+                      'hitMarker': f'{touch.pos[0]}, {touch.pos[1]}',
+                      'session': 5}
+        log_event(event_data)
+        post_event(event_data)
 
 
 class MainApp(App):
@@ -135,9 +162,9 @@ class MainApp(App):
         return Root()
 
     def __del__(self):
-        tw_dispenser_q.put('poison pill')
-        print('Poisoned')
-        tw_dispenser_process.join(timeout=1.)
+        # tw_dispenser_q.put('poison pill')
+        # print('Poisoned')
+        # tw_dispenser_process.join(timeout=1.)
         print('Closing thread')
 
 

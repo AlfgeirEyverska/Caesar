@@ -142,7 +142,7 @@ def thread_dispenser(q):
             pass  # I might want to sleep instead of passing
         else:
             item = q.get()
-            if item is 'poison pill':
+            if item == 'poison pill':
                 break
             else:
                 d.dispense(int(item))

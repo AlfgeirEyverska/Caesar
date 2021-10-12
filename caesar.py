@@ -1,4 +1,3 @@
-import kivy
 # kivy.require('1.0.6')
 
 from kivy.app import App
@@ -59,7 +58,7 @@ class Interface(BoxLayout):
         # Start Delay handling is a bit wonky
         time.sleep(int(start_delay_time))
 
-        retval = subprocess.run(['python3', 'trainingwheels.py'])
+        retval = subprocess.run(['python3', './apps/trainingwheels.py'])
         print(retval)
         if retval.returncode != 0:
             print('App did not run successfully')
