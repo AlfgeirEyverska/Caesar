@@ -14,10 +14,9 @@ from os import path
 
 import requests
 
+# dispenser setup
 # import dispenser
 # import multiprocessing as mp
-
-# dispenser setup
 
 # tw_dispenser_q = mp.Queue()
 
@@ -59,8 +58,8 @@ print(f'Maximum size: {float(caesar_config["max_size"])}% - {max_size}')
 # min size setup
 min_size = Window.width if Window.height > Window.width else Window.height
 min_size = min_size * float(caesar_config['min_size']) / 100.0
-print(f'Minimum size: {float(caesar_config["min_size"])}% - {min_size}')
 
+print(f'Minimum size: {float(caesar_config["min_size"])}% - {min_size}')
 print(f'Window width - {Window.width}\nWindow height - {Window.height}')
 
 # markup
@@ -84,6 +83,15 @@ Builder.load_string(f'''
 # Initiate timing
 start_time = datetime.now()
 
+# create new session
+data = {"name": caesar_config["monkey_name"], "date": str(start_time.date()), "app": "Training Wheels"}
+print(data)
+results = requests.post('http://127.0.0.1:3000/api/sessions/', data=data)
+print(results.content)
+
+# TODO: update with error handling
+session_id = results.json()[0]['id']
+
 # Create log file name based off of the current date and time
 log_file_name = f'{caesar_config["results_path"]}/{caesar_config["monkey_name"]}_{start_time.date()}_{start_time.hour}-{start_time.minute}-{start_time.second}.log'
 
@@ -102,7 +110,7 @@ def log_event(event_data):
 
 # TODO: update to use actual api address
 def post_event(event_data):
-    response = requests.post('http://127.0.0.1:3000/api/sessions/5', data=event_data)
+    response = requests.post(f'http://127.0.0.1:3000/api/events/{session_id}', data=event_data)
     print(response.content)
 
 
@@ -157,7 +165,7 @@ class Target(Widget):
                       'position': f'{self.center_x}, {self.center_y}',
                       'time': str(rn.time()),
                       'hitMarker': f'{touch.pos[0]}, {touch.pos[1]}',
-                      'session': 5}
+                      'session': session_id}
         log_event(event_data)
         post_event(event_data)
 

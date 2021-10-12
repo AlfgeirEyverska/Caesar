@@ -23,7 +23,6 @@ class MainApp(App):
             'monkey_name': 'Daisy',
             'icon': '/',
             'num_clicks': 1,
-            'delay': 0,
             'max_size': 100,
             'min_size': 30,
             'use_fail_audio': True,
@@ -32,6 +31,10 @@ class MainApp(App):
             'failure_audio_path': '/',
             'results_path': '/'
         })
+        '''
+        'delay': 0, <- from above
+        delay = 9 <- from main.ini
+        '''
 
     def build_settings(self, settings):
         settings.add_json_panel('Training Wheels',
